@@ -1,0 +1,61 @@
+on temp#Temperature do
+  TaskValueSet 12,1,[temp#Temperature]+10
+endon
+
+
+on setValue do
+  TaskValueSet 12,3,%eventvalue%
+  event,calcMedian
+endon
+
+on addOne do
+  TaskValueSet 12,3,[DataStore#var3]+1
+  event,calcMedian
+endon
+
+on deleteOne do
+  TaskValueSet 12,3,[DataStore#var3]-1
+  event,calcMedian
+endon
+
+
+on calcMedian do
+  //calculate median from 4 old and one new value
+  TaskValueSet 12,4,([MedianCalculator#var1]+[MedianCalculator#var3]+[MedianCalculator#var3]+[MedianCalculator#var4]+[DataStore#changed_value])/5
+  //replace old values and save new one
+  TaskValueSet 11,4,[MedianCalculator#var3]
+  TaskValueSet 11,3,[MedianCalculator#var2]
+  TaskValueSet 11,2,[MedianCalculator#var1]
+  TaskValueSet 11,1,[DataStore#changed_value]
+endon
+
+
+on DataStore#median_from_changed_value do
+  //When a new median light value is calculated, check if the heating should be on or off
+  if [DataStore#median_from_changed_value > 98 //If Sunlight is available
+    if [temp#Temperature] < 29.5  //and temperature of the water is below lower limit
+      if DataStore#Heating_on = 0 //and heating is currently off
+        event,startHeating //start heating (=open valve)
+    endif
+  else //sunlight is not available
+    if DataStore#Heating_on = 0 //and heating is currently ok
+       event,stopHeating  //stop heating (=close valve)
+    endif
+  endif
+endon
+
+
+on startHeating do
+  //close relais for opening the valve
+  timerSet,1,30 //set relais-timer
+endon
+
+on stopHeating do
+  //close relais for closing the valve
+  timerSet,1,30 //set relais-timer
+endon
+
+On Rules#Timer=1 do
+  //open relais for opening the valve
+  //open relais for closing the valve
+endon
